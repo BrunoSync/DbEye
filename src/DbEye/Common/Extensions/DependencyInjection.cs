@@ -19,6 +19,7 @@ namespace DbEye.Common.Extensions
             services.AddScoped<DbEyeCollector>();
             services.AddSingleton<DbEyeInterceptor>();
             services.Configure<DbEyeOptions>(configure ?? (_ => {}));
+            services.AddHttpContextAccessor();
 
             return services;
         }
