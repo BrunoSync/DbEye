@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DbEye.Demo/DbEye.Demo.csproj" />
+    <Project Path="src/DbEye/DbEye.csproj" />
+  </Folder>
+</Solution>
