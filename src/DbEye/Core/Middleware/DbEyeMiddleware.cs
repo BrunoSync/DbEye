@@ -19,17 +19,14 @@ namespace DbEye.Core.Middleware
 
         public DbEyeMiddleware(RequestDelegate next, ILogger<DbEyeMiddleware> logger)
         {
-            Console.WriteLine("DbEyeMiddleware instanciado!");
             _next = next;
             _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext context, IOptions<DbEyeOptions> options)
         {
-            Console.WriteLine("Middleware chamado!");
             await _next(context);
             var collector = context.RequestServices.GetRequiredService<DbEyeCollector>();
-            Console.WriteLine($"Queries no collector: {collector.Queries.Count}");
             var thresHoldMs = TimeSpan.FromMilliseconds(options.Value.SlowQueryThresholdMs);
 
             var sqlQueries = collector.Queries  
@@ -41,12 +38,12 @@ namespace DbEye.Core.Middleware
 
             foreach (var item in sqlQueries)
             {
-                _logger.LogWarning($"⚠️ N+1 detectado em {context.Request.Method} {context.Request.Path}\nQuery repetida {item.Count()} - {item.Key}");
+                _logger.LogWarning($"⚠️  N+1 detectado em {context.Request.Method} {context.Request.Path}\nQuery repetida {item.Count()}x - {item.Key}");
             }
 
             foreach (var item in slowQueries)
             {
-                _logger.LogWarning($"⚠️ Query lenta detectada em {context.Request.Method} {context.Request.Path}\nDuração: {item.DurationInMs.TotalMilliseconds} - {item.Sql}");
+                _logger.LogWarning($"⚠️  Query lenta detectada em {context.Request.Method} {context.Request.Path}\nDuração: {item.DurationInMs.TotalMilliseconds} - {item.Sql}");
             }
         }
     }
