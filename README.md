@@ -3,7 +3,9 @@
 [![NuGet](https://img.shields.io/nuget/v/DbEye.svg)](https://www.nuget.org/packages/DbEye)
 [![Downloads](https://img.shields.io/nuget/dt/DbEye.svg)](https://www.nuget.org/packages/DbEye)
 
-**DbEye** is a lightweight middleware for ASP.NET Core that detects **N+1 query problems** and **slow queries** in Entity Framework Core applications — right in your development logs.
+**DbEye** is a lightweight middleware for ASP.NET Core that detects **N+1 query problems** and **slow queries** in Entity Framework Core applications — right in your development logs, per HTTP request.
+
+> ⚠️ DbEye is intended for **development use only**. Disable or remove it in production environments.
 
 > ⚠️ DbEye is intended for **development use only**. It automatically disables itself outside of the Development environment.
 
@@ -131,7 +133,7 @@ curl http://localhost:5000/api/comments?delay=true
 | `PUT` | `/api/posts/{id}` | Update post |
 | `DELETE` | `/api/posts/{id}` | Delete post |
 | `GET` | `/api/comments` | List comments (`?delay=true` to simulate slow query) |
-| `GET` | `/api/comments/{id}` | Get comment by id (`?delay=true` to simulate slow query) |
+| `GET` | `/api/comments/{id}` | Get comment by id |
 | `POST` | `/api/comments` | Create comment |
 | `PUT` | `/api/comments/{id}` | Update comment |
 | `DELETE` | `/api/comments/{id}` | Delete comment |
