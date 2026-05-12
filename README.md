@@ -7,6 +7,8 @@
 
 > ⚠️ DbEye is intended for **development use only**. Disable or remove it in production environments.
 
+> ⚠️ DbEye is intended for **development use only**. It automatically disables itself outside of the Development environment.
+
 ## Installation
 
 ```bash
@@ -21,7 +23,6 @@ Add DbEye to your `Program.cs`:
 builder.Services.AddDbEye();
 builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 {
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
     options.AddInterceptors(serviceProvider.GetRequiredService<DbEyeInterceptor>());
 });
 
@@ -30,21 +31,29 @@ app.UseDbEye();
 
 ## Configuration
 
-By default, queries taking longer than **500ms** are flagged as slow. You can customize this threshold:
+By default, queries taking longer than **500ms** are flagged as slow. You can customize this threshold globally or per endpoint:
 
 ```csharp
 builder.Services.AddDbEye(options =>
 {
-    options.SlowQueryThresholdMs = 200;
+    options.SlowQueryThresholdMs = 500;
+    options.EndpointThresholds = new Dictionary<string, int>
+    {
+        { "/api/reports", 2000 },
+        { "/api/comments", 200 }
+    };
 });
 ```
 
+Endpoints not listed in `EndpointThresholds` fall back to `SlowQueryThresholdMs`.
+
 ## How it works
 
-DbEye hooks into EF Core via an interceptor and tracks every query fired during a request. Each request gets its own isolated context — queries from different requests never mix. When a problem is detected, a warning is emitted through ASP.NET Core's standard logging pipeline, showing up directly in your terminal or VS Code output panel.
+DbEye hooks into EF Core via an interceptor and analyzes query patterns on each request. When a problem is detected, a warning is emitted through ASP.NET Core's standard logging pipeline — it shows up directly in your terminal or VS Code output panel. When everything looks healthy, it logs a confirmation instead.
 
-- **N+1 detection** — identifies when the same query is fired multiple times in a single request, a pattern that could be resolved with a single join or `Include()`
-- **Slow query detection** — flags queries that exceed `SlowQueryThresholdMs`
+- **N+1 detection** — identifies when multiple queries are fired in a loop that could be resolved with a single join or `Include()`
+- **Slow query detection** — flags queries that exceed the configured threshold
+- **Environment-aware** — automatically skips all logic outside of Development, zero overhead in production
 
 No external dashboard, no extra dependencies to run — just clear warnings where you already look.
 
@@ -53,15 +62,27 @@ No external dashboard, no extra dependencies to run — just clear warnings wher
 **N+1 detected:**
 ```
 warn: DbEye[0]
+      --------------------------------------------------
       ⚠️  N+1 detected at GET /api/posts
-      Query repeated 100x - SELECT * FROM "Comments" WHERE "PostId" = ...
+      Query repeated 5x - SELECT * FROM "Comments" WHERE "PostId" = ...
+      --------------------------------------------------
 ```
 
 **Slow query detected:**
 ```
 warn: DbEye[0]
+      --------------------------------------------------
       ⚠️  Slow query detected at GET /api/comments
       Duration: 732ms - SELECT * FROM "Comments"
+      --------------------------------------------------
+```
+
+**No issues:**
+```
+info: DbEye[0]
+      --------------------------------------------------
+      ✅  GET /api/posts - no issues detected
+      --------------------------------------------------
 ```
 
 ## Try it out
@@ -71,7 +92,7 @@ The repository includes a demo project with a pre-configured Postgres database. 
 ```bash
 git clone https://github.com/BrunoSync/DbEye
 cd DbEye
-docker compose up
+docker compose up --build
 ```
 
 The API will be available at `http://localhost:5000`. Watch the warnings in real time:
