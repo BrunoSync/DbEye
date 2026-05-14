@@ -35,10 +35,22 @@ namespace DbEye.Core.Middleware
                 return;
             }
 
-            await _next(context);
-            var collector = context.RequestServices.GetRequiredService<DbEyeCollector>();
-            
+            // Path
             var path = context.Request.Path.ToString();
+
+            // Exclude endpoints
+            var excludeEndpoints = options.Value.ExcludedEndpoints;
+
+            if (excludeEndpoints.Any(e => path.StartsWith(e)))
+            {
+                await _next(context);
+                return;
+            }
+
+            await _next(context);
+
+            // N+1 and Slow Queries
+            var collector = context.RequestServices.GetRequiredService<DbEyeCollector>();
 
             var ms = options.Value.EndpointThresholds.TryGetValue(path, out var custom)
                 ? custom : options.Value.SlowQueryThresholdMs;
@@ -56,7 +68,7 @@ namespace DbEye.Core.Middleware
 
             foreach (var item in sqlQueries)
             {
-                _logger.LogWarning($"\n{separator}\n⚠️  N+1 detected at {context.Request.Method} {context.Request.Path}\nQuery repeated {item.Count()}x - {item.Key} \n\n{separator}");
+                _logger.LogWarning($"\n{separator}\n\n⚠️  N+1 detected at {context.Request.Method} {context.Request.Path}\nQuery repeated {item.Count()}x - {item.Key} \n\n{separator}");
             }
 
             foreach (var item in slowQueries)
@@ -65,7 +77,7 @@ namespace DbEye.Core.Middleware
             }
 
             if (!sqlQueries.Any() && !slowQueries.Any())
-                _logger.LogInformation($"\n{separator}\n\n✅  {context.Request.Method} {context.Request.Path} - no issues detected \n{separator}");
+                _logger.LogInformation($"\n{separator}\n\n✅  {context.Request.Method} {context.Request.Path} - no issues detected \n\n{separator}");
         }
     }
 }
