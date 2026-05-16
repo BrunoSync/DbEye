@@ -1,5 +1,6 @@
 using System.Data.Common;
 using DbEye.Common.Models;
+using DbEye.Common.Utils;
 using DbEye.Core.Collector;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -22,7 +23,7 @@ namespace DbEye.Core.Interceptor
             CommandEventData eventData,
             InterceptionResult<DbDataReader> result)
         {
-            InjectSlowQuery(command);
+            SlowQueryInjector.InjectSlowQuery(command, eventData);
             return result;
         }
 
@@ -32,7 +33,7 @@ namespace DbEye.Core.Interceptor
             InterceptionResult<DbDataReader> result,
             CancellationToken cancellationToken = default)
         {
-            InjectSlowQuery(command);
+            SlowQueryInjector.InjectSlowQuery(command, eventData);
             return ValueTask.FromResult(result);
         }
 
@@ -55,28 +56,12 @@ namespace DbEye.Core.Interceptor
             return new ValueTask<DbDataReader>(result);
         }
 
-        private static void InjectSlowQuery(DbCommand command)
-        {
-            if (command.CommandText.Contains("-- db-eye-slow-simulate"))
-            {
-                command.CommandText = $"DO $$ BEGIN PERFORM pg_sleep(1); END $$;\n{command.CommandText}";
-            }
-        }
-
         private void Collect(DbCommand command, CommandExecutedEventData eventData)
         {
             if (eventData.Context is null)
                 return;
 
-            var sql = command.CommandText;
-
-            if (sql.Contains("-- db-eye-slow-simulate"))
-            {
-                sql = sql
-                    .Replace("DO $$ BEGIN PERFORM pg_sleep(1); END $$;\n", "")
-                    .Replace("-- db-eye-slow-simulate\n\n", "")
-                    .Trim();
-            }
+            var sql = SlowQueryInjector.Strip(command.CommandText);
 
             var newQuery = new QueryModel(sql, eventData.Duration);
 
