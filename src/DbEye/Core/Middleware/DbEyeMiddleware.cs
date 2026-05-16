@@ -39,7 +39,7 @@ namespace DbEye.Core.Middleware
             var path = context.Request.Path.ToString();
 
             // Exclude endpoints
-            var excludeEndpoints = options.Value.ExcludedEndpoints;
+            var excludeEndpoints = options.Value.GetExcludedEndpoints();
 
             if (excludeEndpoints.Any(e => path.StartsWith(e)))
             {

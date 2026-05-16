@@ -5,8 +5,6 @@
 
 **DbEye** is a lightweight middleware for ASP.NET Core that detects **N+1 query problems** and **slow queries** in Entity Framework Core applications — right in your development logs, per HTTP request.
 
-> ⚠️ DbEye is intended for **development use only**. Disable or remove it in production environments.
-
 > ⚠️ DbEye is intended for **development use only**. It automatically disables itself outside of the Development environment.
 
 ## Installation
@@ -36,12 +34,15 @@ By default, queries taking longer than **500ms** are flagged as slow. You can cu
 ```csharp
 builder.Services.AddDbEye(options =>
 {
-    options.SlowQueryThresholdMs = 500;
+    options.SlowQueryThresholdMs = 350;
     options.EndpointThresholds = new Dictionary<string, int>
     {
         { "/api/reports", 2000 },
         { "/api/comments", 200 }
     };
+    options.ExcludeEndpoints("api/posts", "api/comments");
+    options.ExcludeScalar();
+    options.ExcludeSwagger();
 });
 ```
 
@@ -137,6 +138,14 @@ curl http://localhost:5000/api/comments?delay=true
 | `POST` | `/api/comments` | Create comment |
 | `PUT` | `/api/comments/{id}` | Update comment |
 | `DELETE` | `/api/comments/{id}` | Delete comment |
+
+## Supported databases
+
+| Database | Provider |
+|----------|----------|
+| PostgreSQL | Npgsql.EntityFrameworkCore.PostgreSQL |
+| SQL Server | Microsoft.EntityFrameworkCore.SqlServer |
+| SQLite | Microsoft.EntityFrameworkCore.Sqlite |
 
 ## Supported frameworks
 

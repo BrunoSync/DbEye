@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0] - 2026-05-15
+
+### Added
+- Multi-database support (PostgreSQL, SQL Server, SQLite)
+- Endpoint exclusion via `ExcludeEndpoints`, `ExcludeScalar` and `ExcludeSwagger`
+- Unit tests for middleware and collector
+
 ## [1.1.0] - 2026-05-12
 
 ### Added
