@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0] - 2026-05-18
+
+### Added
+- Configurable N+1 detection threshold globally and per endpoint
+- `AllowedEnvironments` validation — app throws on startup if current environment is not allowed
+
+### Changed
+- Extracted delay testing logic to its own middleware
+
+### Removed
+- Unused database providers from Docker Compose
+
 ## [1.2.0] - 2026-05-15
 
 ### Added
