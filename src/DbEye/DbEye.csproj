@@ -7,7 +7,7 @@
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>DbEye</PackageId>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <Authors>Bruno Ferreira</Authors>
     <Description>Detects N+1 problems and slow queries in EF Core applications.</Description>
     <PackageTags>efcore entityframework n+1 queries performance middleware</PackageTags>

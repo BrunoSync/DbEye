@@ -9,8 +9,11 @@ namespace DbEye.Common.Options
     {
         public int SlowQueryThresholdMs { get; set; } = 500;
         public Dictionary<string, int> EndpointThresholds { get; set; } = [];
+        public int NPlus1Threshold { get; set; } = 1;
+        public Dictionary<string, int> EndpointNPlus1Thresholds { get; set; } = [];
         private HashSet<string> ExcludedEndpoints { get; set; } = [];
         internal IEnumerable<string> GetExcludedEndpoints() => ExcludedEndpoints;
+        public List<string> AllowedEnvironments { get; set; } = ["Development"];
 
         public DbEyeOptions ExcludeEndpoints(params string[] endpoints)
         {

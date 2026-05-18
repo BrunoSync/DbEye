@@ -29,10 +29,15 @@ namespace DbEye.Core.Middleware
 
         public async Task InvokeAsync(HttpContext context, IOptions<DbEyeOptions> options)
         {
-            if (!_env.IsDevelopment())
+            var currentEnvironment = _env.EnvironmentName;
+
+            if (!options.Value.AllowedEnvironments.Contains(currentEnvironment, StringComparer.OrdinalIgnoreCase))
             {
-                await _next(context);
-                return;
+                throw new InvalidOperationException(
+                    $"DbEye is not allowed in the '{currentEnvironment}' environment. " +
+                    $"Allowed environments: {string.Join(", ", options.Value.AllowedEnvironments)}. " +
+                    "Remove AddDbEye() from your configuration or update AllowedEnvironments."
+                );
             }
 
             // Path
@@ -52,14 +57,17 @@ namespace DbEye.Core.Middleware
             // N+1 and Slow Queries
             var collector = context.RequestServices.GetRequiredService<DbEyeCollector>();
 
+            var NPlus1Threshold = options.Value.EndpointNPlus1Thresholds.TryGetValue(path, out var queryLimit)
+                ? queryLimit : options.Value.NPlus1Threshold;
+
+            var sqlQueries = collector.Queries  
+                                .GroupBy(s => s.Sql)
+                                .Where(s => s.Count() > NPlus1Threshold).ToList();
+
             var ms = options.Value.EndpointThresholds.TryGetValue(path, out var custom)
                 ? custom : options.Value.SlowQueryThresholdMs;
 
             var thresHoldMs = TimeSpan.FromMilliseconds(ms);
-
-            var sqlQueries = collector.Queries  
-                                .GroupBy(s => s.Sql)
-                                .Where(s => s.Count() > 1).ToList();
 
             var slowQueries = collector.Queries
                                 .Where(d => d.DurationInMs >= thresHoldMs).ToList();
@@ -73,7 +81,7 @@ namespace DbEye.Core.Middleware
 
             foreach (var item in slowQueries)
             {
-                _logger.LogWarning($"\n{separator}\n\n⚠️  Slow query detected at {context.Request.Method} {context.Request.Path}\nDuration: {item.DurationInMs.TotalMilliseconds}ms - {item.Sql} \n\n{separator}");
+                _logger.LogWarning($"\n{separator}\n\n⚠️  Slow query detected at {context.Request.Method} {context.Request.Path}\nDuration: {(int)item.DurationInMs.TotalMilliseconds}ms - {item.Sql} \n\n{separator}");
             }
 
             if (!sqlQueries.Any() && !slowQueries.Any())
