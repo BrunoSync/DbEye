@@ -55,9 +55,10 @@ namespace DbEye.Tests.DbEye.Core
             var middleware = CreateMiddleware();
             var context = CreateHttpContext();
 
-            await middleware.InvokeAsync(context, Options.Create(new DbEyeOptions()));
+            var result = () => middleware.InvokeAsync(context, Options.Create(new DbEyeOptions()));
 
-            _collector.Queries.Should().BeEmpty();
+            await result.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("DbEye is not allowed in the 'Production' environment.*");
         }
 
         [Fact]
