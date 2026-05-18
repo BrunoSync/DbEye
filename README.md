@@ -5,7 +5,7 @@
 
 **DbEye** is a lightweight middleware for ASP.NET Core that detects **N+1 query problems** and **slow queries** in Entity Framework Core applications — right in your development logs, per HTTP request.
 
-> ⚠️ DbEye is intended for **development use only**. It automatically disables itself outside of the Development environment.
+> ⚠️ DbEye throws on startup if the current environment is not in the `AllowedEnvironments` list. By default, only `Development` is allowed.
 
 ## Installation
 
@@ -29,7 +29,7 @@ app.UseDbEye();
 
 ## Configuration
 
-By default, queries taking longer than **500ms** are flagged as slow. You can customize this threshold globally or per endpoint:
+By default, queries taking longer than **500ms** are flagged as slow, and **2 or more identical queries** per request are flagged as N+1. You can customize all thresholds globally or per endpoint:
 
 ```csharp
 builder.Services.AddDbEye(options =>
@@ -40,21 +40,27 @@ builder.Services.AddDbEye(options =>
         { "/api/reports", 2000 },
         { "/api/comments", 200 }
     };
+    options.NPlus1Threshold = 3;
+    options.EndpointNPlus1Thresholds = new Dictionary<string, int>
+    {
+        { "/api/posts", 5 }
+    };
+    options.AllowedEnvironments = ["Development", "Staging"];
     options.ExcludeEndpoints("api/posts", "api/comments");
     options.ExcludeScalar();
     options.ExcludeSwagger();
 });
 ```
 
-Endpoints not listed in `EndpointThresholds` fall back to `SlowQueryThresholdMs`.
+Endpoints not listed in `EndpointThresholds` or `EndpointNPlus1Thresholds` fall back to the global threshold.
 
 ## How it works
 
 DbEye hooks into EF Core via an interceptor and analyzes query patterns on each request. When a problem is detected, a warning is emitted through ASP.NET Core's standard logging pipeline — it shows up directly in your terminal or VS Code output panel. When everything looks healthy, it logs a confirmation instead.
 
-- **N+1 detection** — identifies when multiple queries are fired in a loop that could be resolved with a single join or `Include()`
+- **N+1 detection** — identifies when multiple identical queries are fired in a loop that could be resolved with a single join or `Include()`
 - **Slow query detection** — flags queries that exceed the configured threshold
-- **Environment-aware** — automatically skips all logic outside of Development, zero overhead in production
+- **Environment-aware** — throws on startup if the current environment is not in `AllowedEnvironments`, zero overhead in production
 
 No external dashboard, no extra dependencies to run — just clear warnings where you already look.
 
